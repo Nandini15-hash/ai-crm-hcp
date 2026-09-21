@@ -29,6 +29,19 @@ app.add_middleware(
 )
 
 
+# Vercel's Python runtime does not reliably let CORSMiddleware auto-answer
+# the CORS preflight OPTIONS request before it falls through to normal
+# routing (which then 405s, since no route explicitly handles OPTIONS).
+# This catch-all makes sure every path has an OPTIONS handler; the
+# middleware above still attaches the actual CORS headers to its response.
+from fastapi import Response
+
+
+@app.options("/{rest_of_path:path}")
+async def preflight_handler(rest_of_path: str):
+    return Response(status_code=204)
+
+
 # Database Dependency
 def get_db():
     db = SessionLocal()
