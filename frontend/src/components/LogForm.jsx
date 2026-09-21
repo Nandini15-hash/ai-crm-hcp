@@ -1,7 +1,10 @@
 import { useState } from "react";
-import api from "../services/api";
+import { useDispatch } from "react-redux";
+import { createInteraction } from "../redux/interactionSlice";
 
 function LogForm() {
+  const dispatch = useDispatch();
+
   const [formData, setFormData] = useState({
     hcp_name: "",
     interaction_type: "Meeting",
@@ -19,8 +22,8 @@ function LogForm() {
 
   const saveInteraction = async () => {
     try {
-      const res = await api.post("/interaction", formData);
-      alert(res.data.message);
+      await dispatch(createInteraction(formData)).unwrap();
+      alert("Interaction saved successfully.");
 
       setFormData({
         hcp_name: "",

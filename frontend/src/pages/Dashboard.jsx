@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
-import api from "../services/api";
+import { useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchInteractions } from "../redux/interactionSlice";
 
 import {
   Grid,
@@ -19,40 +20,43 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
+// FastAPI's docs UI pre-fills string fields with the literal word "string"
+// when someone tests an endpoint without changing the example — filtered
+// out here so leftover test data doesn't show up as a real doctor.
+const JUNK_VALUES = new Set(["", "string", "na", "n/a", "none"]);
+
 function Dashboard() {
-  const [summary, setSummary] = useState({
-    total_visits: 0,
-    doctors_visited: [],
-  });
+  const dispatch = useDispatch();
+  const interactions = useSelector((state) => state.interaction.interactions);
+  const status = useSelector((state) => state.interaction.status);
 
   useEffect(() => {
-    api
-      .get("/visit-summary")
-      .then((res) => {
-        setSummary(res.data);
-      })
-      .catch(console.error);
-  }, []);
+    // Derive every stat below from the same shared list the rest of the
+    // app uses, so the Dashboard updates the moment a new interaction is
+    // logged anywhere (form or AI chat) instead of needing its own
+    // separate fetch to notice the change.
+    if (status === "idle") {
+      dispatch(fetchInteractions());
+    }
+  }, [status, dispatch]);
 
-  const validDoctors = summary.doctors_visited.filter(
-    (doctor) =>
-      doctor &&
-      doctor.trim() !== "" &&
-      doctor.toLowerCase() !== "string" &&
-      doctor.toLowerCase() !== "na"
-  );
+  const validDoctors = interactions
+    .map((item) => item.hcp_name)
+    .filter((name) => name && !JUNK_VALUES.has(name.trim().toLowerCase()));
 
   const uniqueDoctors = [...new Set(validDoctors)];
 
+  const pendingFollowups = interactions.filter((item) => {
+    const followUp = (item.follow_up || "").trim().toLowerCase();
+    return followUp && !JUNK_VALUES.has(followUp);
+  });
+
+  const totalVisits = interactions.length;
+
   const chartData = [
-    {
-      name: "Visits",
-      value: summary.total_visits,
-    },
-    {
-      name: "Doctors",
-      value: uniqueDoctors.length,
-    },
+    { name: "Visits", value: totalVisits },
+    { name: "Doctors", value: uniqueDoctors.length },
+    { name: "Follow-ups", value: pendingFollowups.length },
   ];
 
   return (
@@ -71,7 +75,7 @@ function Dashboard() {
               </Typography>
 
               <Typography variant="h3">
-                {summary.total_visits}
+                {totalVisits}
               </Typography>
             </CardContent>
           </Card>
@@ -99,7 +103,7 @@ function Dashboard() {
               </Typography>
 
               <Typography variant="h3">
-                {summary.total_visits}
+                {pendingFollowups.length}
               </Typography>
             </CardContent>
           </Card>
@@ -113,7 +117,7 @@ function Dashboard() {
               </Typography>
 
               <Typography variant="h3">
-                {summary.total_visits}
+                {totalVisits}
               </Typography>
             </CardContent>
           </Card>
@@ -143,11 +147,15 @@ function Dashboard() {
               Recent Doctors
             </Typography>
 
-            {uniqueDoctors.map((doctor, index) => (
-              <Typography key={index}>
-                • {doctor}
-              </Typography>
-            ))}
+            {uniqueDoctors.length === 0 ? (
+              <Typography color="text.secondary">No doctors logged yet.</Typography>
+            ) : (
+              uniqueDoctors.map((doctor, index) => (
+                <Typography key={index}>
+                  • {doctor}
+                </Typography>
+              ))
+            )}
           </Paper>
         </Grid>
 

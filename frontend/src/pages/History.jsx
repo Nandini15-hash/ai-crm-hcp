@@ -1,24 +1,23 @@
 import { useEffect, useState } from "react";
-import api from "../services/api";
+import { useDispatch, useSelector } from "react-redux";
+import {
+  fetchInteractions,
+  updateInteraction,
+  deleteInteraction,
+} from "../redux/interactionSlice";
 
 function History() {
-  const [interactions, setInteractions] = useState([]);
+  const dispatch = useDispatch();
+  const interactions = useSelector((state) => state.interaction.interactions);
+  const status = useSelector((state) => state.interaction.status);
+
   const [search, setSearch] = useState("");
 
   useEffect(() => {
-    loadInteractions();
-  }, []);
+    dispatch(fetchInteractions());
+  }, [dispatch]);
 
-  const loadInteractions = () => {
-    api
-      .get("/interactions")
-      .then((res) => {
-        setInteractions(res.data);
-      })
-      .catch((err) => console.error(err));
-  };
-
-  const deleteInteraction = async (id) => {
+  const handleDelete = async (id) => {
     const confirmDelete = window.confirm(
       "Are you sure you want to delete this interaction?"
     );
@@ -26,30 +25,24 @@ function History() {
     if (!confirmDelete) return;
 
     try {
-      await api.delete(`/interaction/${id}`);
+      await dispatch(deleteInteraction(id)).unwrap();
       alert("Interaction deleted successfully.");
-      loadInteractions();
     } catch (err) {
       console.error(err);
       alert("Unable to delete interaction.");
     }
   };
 
-  const editInteraction = async (item) => {
+  const handleEdit = async (item) => {
     const notes = prompt("Update Notes", item.notes);
 
     if (notes === null) return;
 
     try {
-      await api.put("/interaction", {
-        interaction_id: item.id,
-        updates: {
-          notes: notes,
-        },
-      });
-
+      await dispatch(
+        updateInteraction({ id: item.id, updates: { notes } })
+      ).unwrap();
       alert("Interaction updated successfully.");
-      loadInteractions();
     } catch (err) {
       console.error(err);
       alert("Unable to update interaction.");
@@ -98,7 +91,13 @@ function History() {
         </thead>
 
         <tbody>
-          {filtered.length === 0 ? (
+          {status === "loading" ? (
+            <tr>
+              <td colSpan="8" style={{ textAlign: "center", padding: "20px" }}>
+                Loading...
+              </td>
+            </tr>
+          ) : filtered.length === 0 ? (
             <tr>
               <td
                 colSpan="8"
@@ -139,7 +138,7 @@ function History() {
 
                 <td style={{ border: "1px solid #ddd", padding: "10px" }}>
                   <button
-                    onClick={() => editInteraction(item)}
+                    onClick={() => handleEdit(item)}
                     style={{
                       background: "#2563eb",
                       color: "white",
@@ -155,7 +154,7 @@ function History() {
 
                 <td style={{ border: "1px solid #ddd", padding: "10px" }}>
                   <button
-                    onClick={() => deleteInteraction(item.id)}
+                    onClick={() => handleDelete(item.id)}
                     style={{
                       background: "#dc2626",
                       color: "white",

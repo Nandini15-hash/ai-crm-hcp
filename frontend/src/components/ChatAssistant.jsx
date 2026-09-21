@@ -1,7 +1,11 @@
 import { useState } from "react";
+import { useDispatch } from "react-redux";
 import api from "../services/api";
+import { fetchInteractions } from "../redux/interactionSlice";
 
 function ChatAssistant() {
+  const dispatch = useDispatch();
+
   const [prompt, setPrompt] = useState("");
   const [response, setResponse] = useState("");
   const [loading, setLoading] = useState(false);
@@ -17,6 +21,12 @@ function ChatAssistant() {
       });
 
       setResponse(res.data.response);
+
+      // The chat assistant can log, edit, search, or summarize behind the
+      // scenes — refresh the shared Redux list so Dashboard/History pick up
+      // whatever just changed, without the user having to switch tabs and
+      // back to trigger a manual reload.
+      dispatch(fetchInteractions());
     } catch (error) {
       setResponse("Error connecting to AI backend.");
       console.error(error);
@@ -40,7 +50,7 @@ function ChatAssistant() {
         rows="8"
         value={prompt}
         onChange={(e) => setPrompt(e.target.value)}
-        placeholder="Describe your interaction with the HCP..."
+        placeholder="Log a visit, ask to search a doctor, check follow-ups, or ask for a summary..."
         style={{
           width: "100%",
           padding: "10px",
@@ -60,7 +70,7 @@ function ChatAssistant() {
           cursor: "pointer",
         }}
       >
-        {loading ? "Thinking..." : "Log with AI"}
+        {loading ? "Thinking..." : "Ask AI"}
       </button>
 
       <div
@@ -70,6 +80,7 @@ function ChatAssistant() {
           background: "#f8fafc",
           borderRadius: "8px",
           minHeight: "120px",
+          whiteSpace: "pre-wrap",
         }}
       >
         <strong>AI Response</strong>

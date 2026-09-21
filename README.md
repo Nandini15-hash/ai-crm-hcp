@@ -78,23 +78,18 @@ Frontend Response
 
 ## LangGraph Tools
 
-1. Log Interaction
-2. Edit Interaction
-3. Search HCP
-4. Follow-up Reminder
-5. Visit Summary
+The AI Chat Assistant first classifies what you're asking for, then routes to
+the matching tool — it's not limited to only logging interactions:
+
+1. **Log Interaction** — "Met with Dr. Rao today, discussed the new cardiac drug, follow up next Friday."
+2. **Edit Interaction** — "Update the notes for Dr. Rao to say we're waiting on samples."
+3. **Search HCP** — "What have we discussed with Dr. Mehta?"
+4. **Follow-up Reminder** — "What follow-ups do I have pending?"
+5. **Visit Summary** — "Give me a summary of all visits so far."
 
 ---
 
 ## Installation
-
-### Frontend
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
 
 ### Backend
 
@@ -107,7 +102,21 @@ venv\Scripts\activate
 
 pip install -r requirements.txt
 
+copy .env.example .env
+```
+
+Open `.env` and set `GROQ_API_KEY` to a key from https://console.groq.com/keys — the AI Chat Assistant won't work without it (the rest of the app, including the manual form/history/dashboard, works fine even without a key).
+
+```bash
 python -m uvicorn main:app --reload
+```
+
+### Frontend
+
+```bash
+cd frontend
+npm install
+npm run dev
 ```
 
 ---
